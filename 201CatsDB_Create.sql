@@ -17,6 +17,7 @@ CREATE TABLE users (
 -- was needed instead.  I included both.  I considered putting NOT NULL contraints on 
 -- each the title and the url, but I thought of a case where I could have a null
 -- title, because all I really need to show the video is the url.
+-- I could have a duplicate url in the table if it had different titles.
 -- Regardless of whether or not I need a title or url, I know that the title and url 
 -- together should be unique. With them together being unique, I could set it as a primary
 -- key, but that would impact performance of queries.
