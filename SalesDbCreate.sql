@@ -1,6 +1,6 @@
-﻿CREATE TABLE States(
+CREATE TABLE States(
 	id		SERIAL PRIMARY KEY,
-	name		TEXT UNIQUE,
+	name		TEXT UNIQUE, —- NOT NULL?
 	code		TEXT UNIQUE
 );
 
