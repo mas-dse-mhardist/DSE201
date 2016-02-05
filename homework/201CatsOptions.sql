@@ -1,19 +1,28 @@
-﻿-- OVERALL LIKES
+﻿---****************** OVERALL LIKES ************************************************************************
 -- Option “Overall Likes”: The Top-10 cat videos are the ones that have collected the highest
 -- numbers of likes, overall.
+---****************** OVERALL LIKES SOLUTION ***************************************************************
 SELECT v.video_id, v.video_name
 FROM likes la JOIN video v ON la.video_id = v.video_id
 GROUP BY v.video_id, v.video_name
 ORDER BY count(la.user_id) DESC, v.video_id
 LIMIT 10;
+---*********************************************************************************************************
 
 
--- FRIEND LIKES
+
+
+
+
+
+
+---****************** FRIEND LIKES ************************************************************************
 -- Option “Friend Likes”: The Top-10 cat videos are the ones that have collected the highest 
 -- numbers of likes from the friends of X.
 -- I am assuming to get friends likes even if it is a video that X also liked
 -- I've commented out the line that would remove friend X's likes, but since the user cannot be a friend
 -- to  him or herself, this is moot.
+------------------------------    SCRATCH PAD     ---------------------------------------------------------
 SELECT user_id, count(friend_id) as friend_count
 FROM friend
 GROUP BY user_id
@@ -25,8 +34,9 @@ SELECT friend_id
 FROM friend
 WHERE user_id = 168
 
+----****************** FRIEND LIKES SOLUTION ************************************************************************
 --using a subquery to get the videos liked by friends of 168
-SELECT v.video_id, v.video_name --, count(la.user_id) as like_count 
+SELECT v.video_id, v.video_name , count(la.user_id) as like_count 
 FROM likes la JOIN video v ON la.video_id = v.video_id
 WHERE la.user_id IN (SELECT friend_id
 			FROM friend
@@ -35,6 +45,18 @@ WHERE la.user_id IN (SELECT friend_id
 GROUP BY v.video_id, v.video_name
 ORDER BY count(la.user_id) DESC, v.video_id
 LIMIT 10;
+
+SELECT v.video_name, v.video_id, count(l.video_id) as likes
+    FROM 
+        (SELECT DISTINCT friend_id
+         FROM friend
+         WHERE user_id = 168 and friend_id <> 168) f, likes l, video v
+    WHERE v.video_id = l.video_id AND f.friend_id = l.user_id
+    GROUP BY v.video_id
+    ORDER BY likes DESC, v.video_id ASC
+    LIMIT 10
+
+
 
 -- same without subquery
 SELECT v.video_id, v.video_name --, count(la.user_id) as like_count 
@@ -45,12 +67,23 @@ WHERE f.user_id = 168
 GROUP BY v.video_id, v.video_name
 ORDER BY count(la.user_id) DESC,  v.video_id
 LIMIT 10;
+---********************************************************************************************************************
 
+
+
+
+
+
+
+
+
+
+---****************** FRIEND OF FRIENDS LIKES ************************************************************************
 -- Option “Friends-of-Friends Likes”: The Top-10 cat videos are the ones that have collected the highest 
 -- numbers of likes from friends and friends-of-friends.
 -- I'm assuming that even though it is possible for X to be a friend of a friend of him/herself, this is not 
 -- the intent.  Intent should be that we get friends of friends that aren't X.
-
+------------------------------    SCRATCH PAD     ---------------------------------------------------------
 -- This query gets the friends of friends AND friends
 SELECT f2.friend_id -- friend of friends
 FROM friend f1 JOIN friend f2 ON f1.friend_id = f2.user_id
@@ -60,11 +93,11 @@ GROUP BY f2.friend_id
 UNION
 SELECT friend_id -- friends
 FROM friend
-WHERE user_id = 168
-;
+WHERE user_id = 168;
 
+---****************** FRIEND OF FRIENDS SOLUTION (USING SUBQUERY) ***************************************************
 --using a subquery to get the likes from friends of friends
-SELECT v.video_id, v.video_name --, count(la.user_id) as like_count 
+SELECT v.video_id, v.video_name , count(la.user_id) as like_count 
 FROM likes la JOIN video v ON la.video_id = v.video_id
 WHERE la.user_id IN (SELECT f2.friend_id -- friend of friends
 			FROM friend f1 JOIN friend f2 ON f1.friend_id = f2.user_id
@@ -79,28 +112,20 @@ WHERE la.user_id IN (SELECT f2.friend_id -- friend of friends
 GROUP BY v.video_id, v.video_name
 ORDER BY count(la.user_id)  DESC, v.video_id
 LIMIT 10;
+--***********************************************************************************************************************
 
 
-SELECT v.video_id, v.video_name --, count(la.user_id) as like_count 
-FROM video v JOIN likes la ON v.video_id = la.video_id
-WHERE la.user_id IN (SELECT f2.friend_id
-			FROM friend f1 JOIN friend f2 ON f1.friend_id = f2.user_id
-			WHERE f1.user_id = 168
-			AND f2.user_id != 168
-			GROUP BY f2.friend_id
-			UNION
-			SELECT friend_id
-			FROM friend
-			WHERE user_id = 168
-		)
-AND la.user_id != 168
-GROUP BY v.video_id, v.video_name
-ORDER BY count(la.user_id)  DESC,  v.video_id
-LIMIT 10;
 
 
+
+
+
+
+
+---****************** MY KIND OF CATS ************************************************************************
 --Option “My kind of cats”: The Top-10 cat videos are the ones that have collected 
 -- the most likes from users who have liked at least one cat video that was liked by X.
+------------------------------    SCRATCH PAD     ---------------------------------------------------------
 -- In this case, to me, this seems to answer the question of people like you also
 -- liked these other videos.  Again, it doesn't make sense to include the likes from X
 -- if we are trying to determine what other people like X liked.
@@ -129,9 +154,10 @@ WHERE la1.user_id = 168
 GROUP BY la2.user_id
 ORDER BY la2.user_id
 
+---****************** MY KIND OF CATS SOLUTION ************************************************************************
 -- now top videos that have collected the most likes from users who like at least one cat video liked by X
 -- using subquery
-SELECT v.video_id, v.video_name --, count(la.user_id) as like_count 
+SELECT v.video_id, v.video_name , count(la.user_id) as like_count 
 FROM likes la JOIN video v ON la.video_id = v.video_id
 WHERE la.user_id IN (SELECT la2.user_id
 			FROM likes la1 JOIN likes la2 
@@ -144,16 +170,25 @@ GROUP BY v.video_id, v.video_name
 ORDER BY count(la.user_id)  DESC, v.video_id
 LIMIT 10;
 
--- without subquery
-SELECT v.video_id, v.video_name --,  count(distinct la3.user_id) as like_count
+-- SAME SOLUTION without subquery
+SELECT v.video_id, v.video_name ,  count(distinct la3.user_id) as like_count
 FROM likes la1 JOIN likes la2 ON la1.video_id = la2.video_id AND la1.user_id != la2.user_id
 	JOIN likes la3 ON la2.user_id = la3.user_id
 	JOIN video v ON la3.video_id = v.video_id
 WHERE la1.user_id = 168
 GROUP BY v.video_id, v.video_name
 ORDER BY count(la3.user_id)  DESC,  v.video_id
-LIMIT 10
+LIMIT 10;
+---************************************************************************************************************
 
+
+
+
+
+
+
+
+---****************** MY KIND OF CATS WITH PREFERENCE ******************************************************
 -- Option “My kind of cats – with preference (to cat aficionados that have the same tastes)”: 
 -- The Top-10 cat videos are the ones that have collected the highest sum of weighted likes 
 -- from every other user Y (i.e., given a cat video, each like on it, is multiplied according to a weight).
@@ -166,7 +201,7 @@ LIMIT 10
 -- For every user Y you will have a lc weighting
 -- that weighting will be used to apply a factor to the video_count for each video_id and user_id
 -- which would be 1 for any person likes all of the videos that X likes.  Otherwise it is less than one
-
+------------------------------    SCRATCH PAD     ---------------------------------------------------------
 -- Videos liked by X
 SELECT video_id
 FROM likes
@@ -232,7 +267,7 @@ FROM likes la LEFT OUTER JOIN (SELECT yl.user_id, log(1+count(xl.video_id)) lc
 		ON la.user_id = w.user_id
 WHERE la.user_id != 168
 
--- and the resulting top 10 "My kind of cats" would be:
+----****************** MY KIND OF CATS WITH PREFERENCE SOLUTION ******************************************************
 SELECT v.video_id, v.video_name, sum(lr.weighted) as revised_like_count 
 FROM (SELECT la.user_id, la.video_id, COALESCE(w.lc,0) as weighted
 	FROM likes la LEFT OUTER JOIN (SELECT yl.user_id, log(1+count(xl.video_id)) lc
@@ -247,24 +282,32 @@ JOIN video v ON lr.video_id = v.video_id
 GROUP BY v.video_id, v.video_name
 ORDER BY revised_like_count DESC, v.video_id
 LIMIT 10;
+---********************************************************************************************************************
 
 
--- I think this answer is more reasonable as it serves as a better recommender/suggestor of videos
+
+
+
+
+
+
+
+----****************** THINKING FURTHER, THOUGH NOT THE QUESTION ******************************************************
+-- I think this solution is more reasonable as it serves as a better recommender/suggestor of videos
 -- that doesn't isolate the suggestions to just people like X....it weights the like_count, but doesn't
 -- exclude videos when they are popular...
-
--- and for the win...
-SELECT v.video_id, v.video_name --, sum(lr.weighted) as revised_like_count 
+SELECT v.video_id, v.video_name , sum(lr.weighted) as revised_like_count 
 FROM (SELECT la.user_id, la.video_id, COALESCE(1+w.lc,1) as weighted
 	FROM likes la LEFT OUTER JOIN (SELECT yl.user_id, log(1+count(xl.video_id)) lc
 				FROM likes xl JOIN likes yl
 				ON xl.video_id = yl.video_id
-				WHERE xl.user_id = 168
-				AND yl.user_id !=168
+				WHERE xl.user_id = 1
+				AND yl.user_id !=1
 				GROUP BY yl.user_id) w
 			ON la.user_id = w.user_id
-	WHERE la.user_id != 168) lr 
+	WHERE la.user_id != 1) lr 
 JOIN video v ON lr.video_id = v.video_id
 GROUP BY v.video_id, v.video_name
 ORDER BY sum(lr.weighted) DESC, v.video_id
 LIMIT 10;
+---*********************************************************************************************************************
